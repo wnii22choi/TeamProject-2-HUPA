@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: main
+    tier: frontend
+  name: nginx-main
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: main
+      tier: frontend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: main
+        tier: frontend
+    spec:
+      containers:
+      - image: 730335639854.dkr.ecr.ap-northeast-2.amazonaws.com/ca-nginx-main:5
+        name: ca-nginx-main
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: 120Mi
+            cpu: 60m
+          limits:
+            memory: 120Mi
+            cpu: 60m
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: region
+                operator: In
+                values:
+                - seoul
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: main
+            tier: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-main-service
+spec:
+  type: NodePort
+  clusterIP: 172.20.100.101
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 30200
+  selector:
+    app: main
+    tier: frontend
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-main-hpa
+spec:
+  maxReplicas: 10
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-main
+  targetCPUUtilizationPercentage: 50

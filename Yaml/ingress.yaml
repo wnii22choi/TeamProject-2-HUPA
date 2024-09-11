@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-service
+  namespace: web
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/load-balancer-name: prd-web-ingress
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:730335639854:certificate/c1fdd32a-604c-4033-b1f4-851520babac1
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-main-service
+            port:
+              number: 80
+      - path: /login
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-login-service
+            port:
+              number: 80
+      - path: /register
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-register-service
+            port:
+              number: 80
+      - path: /ticket
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-ticket-service
+            port:
+              number: 80
+      - path: /board
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-board-service
+            port:
+              number: 80
